@@ -93,46 +93,62 @@ services:
           - hadoop
   
   hive-metastore:
-      image: bde2020/hive:2.3.2-postgresql-metastore
-      container_name: hive-metastore
-      restart: always
-      environment:
-          SERVICE_PRECONDITION: "namenode:9870 datanode:9864 hive-metastore-postgresql:5432"
-      command: /opt/hive/bin/hive --service metastore
-      ports:
-          - 9083:9083
-      env_file:
-          - ./hadoop.env
-      networks:
-          - hadoop
+    # platform: linux/amd64/v8
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    restart: always
+    environment:
+        SERVICE_PRECONDITION: "namenode:9870 datanode:9864 hive-metastore-postgresql:5432"
+    command: /opt/hive/bin/hive --service metastore
+    ports:
+        - 9083:9083
+    env_file:
+        - ./hadoop.env
+    networks:
+        - hadoop
   
   hive-metastore-postgresql:
-      image: bde2020/hive-metastore-postgresql:2.3.0
-      container_name: hive-metastore-postgresql
-      volumes:
-          - hive_metastore:/var/lib/postgresql/data
-      networks:
-          - hadoop
+    # platform: linux/amd64/v8
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore-postgresql
+    volumes:
+        - hive_metastore:/var/lib/postgresql/data
+    networks:
+        - hadoop
+    deploy:   
+        resources:
+            limits:
+                cpus: '1'
+                memory: 1G
+            reservations:
+                cpus: '0.5'
+                memory: 512M
+    ulimits:
+        nproc: 65535
+        nofile:
+            soft: 20000
+            hard: 40000
   
 
       
   spark-master:
-      image: bde2020/spark-master:3.0.2-hadoop3.2
-      container_name: spark-master
-      depends_on:
-          - namenode
-          - datanode
-      environment:
-          - INIT_DAEMON_STEP=setup_spark
-      ports:
-          - 8080:8080
-          - 7077:7077
-          - 4040:4040
-          - 18080:18080
-      env_file:
-          - ./hadoop.env
-      networks:
-          - hadoop
+    # platform: linux/amd64/v8
+    image: bde2020/spark-master:3.0.2-hadoop3.2
+    container_name: spark-master
+    depends_on:
+        - namenode
+        - datanode
+    environment:
+        - INIT_DAEMON_STEP=setup_spark
+    ports:
+        - 8080:8080
+        - 7077:7077
+        - 4040:4040
+        - 18080:18080
+    env_file:
+        - ./hadoop.env
+    networks:
+        - hadoop
 
 
   jupyter:
@@ -151,17 +167,29 @@ services:
       
 
   sql-server:
-      image: mcr.microsoft.com/mssql/server:2022-latest
-      container_name: sql-server-container
-      environment:
+    # image: mcr.microsoft.com/mssql/server:2022-latest
+    # platform: linux/amd64/v8
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sql-server-container
+    environment:
         MSSQL_SA_PASSWORD: Mo*012105
         ACCEPT_EULA: Y
-      ports:
+    ports:
         - "1433:1433"
-      volumes:
+    volumes:
         - sql-server-data:/var/opt/mssql
-      networks:
+    networks:
         - hadoop
+    deploy:
+        resources:
+            limits:
+                cpus: '2'
+                memory: 2G
+            reservations:
+                cpus: '1'
+                memory: 1G
+    cap_add:
+        - SYS_PTRACE
 
 
 
